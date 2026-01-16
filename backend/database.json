@@ -1,0 +1,38 @@
+{
+  "development": {
+    "dialect": "postgresql",
+    "host": "localhost",
+    "port": 5432,
+    "database": "out-bound",
+    "username": "postgres",
+    "password": "postgres",
+    "pool": {
+      "max": 5,
+      "min": 0,
+      "acquire": 30000,
+      "idle": 10000
+    }
+  },
+  "production": {
+    "dialect": "postgresql",
+    "host": "prod-db.example.com",
+    "port": 5432,
+    "database": "myapp_prod",
+    "username": "myapp_user",
+    "password": "prod_password",
+    "pool": {
+      "max": 20,
+      "min": 5,
+      "acquire": 30000,
+      "idle": 10000
+    }
+  },
+  "testing": {
+    "dialect": "postgresql",
+    "host": "localhost",
+    "port": 5432,
+    "database": "myapp_test",
+    "username": "postgres",
+    "password": "test_password"
+  }
+}

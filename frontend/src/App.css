@@ -1,0 +1,99 @@
+/* 确保根元素和所有容器占满全屏 */
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.app-container {
+  min-height: 100vh !important;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 防止水平滚动条 */
+body {
+  overflow-x: hidden;
+}
+
+/* 确保所有容器都能正确继承尺寸 */
+* {
+  box-sizing: border-box;
+}
+
+/* 响应式字体大小 */
+html {
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  html {
+    font-size: 12px;
+  }
+}
+
+/* 自然靠左布局 */
+.page-content-center {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  margin-left: clamp(
+    40px,
+    2%,
+    200px
+  ); /* 响应式左边距：最小40px，最大200px，默认8% */
+  padding: 0 20px;
+}
+
+@media (max-width: 1200px) {
+  .page-content-center {
+    margin-left: 5%;
+    max-width: 1200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-content-center {
+    margin-left: 20px;
+    max-width: 100%;
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-content-center {
+    margin-left: 16px;
+    padding: 0 12px;
+  }
+}
+
+/* 新增：固定页脚布局的关键样式 */
+.layout-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* 关键：使用视口高度 */
+}
+
+/* 确保主要内容区域可以滚动但不会影响页脚位置 */
+main {
+  flex: 1;
+  min-height: 0; /* 关键：防止flex项目溢出 */
+  overflow-y: auto; /* 允许垂直滚动 */
+}
+
+/* 页脚固定高度（可选） */
+footer {
+  flex-shrink: 0; /* 关键：防止页脚收缩 */
+}
