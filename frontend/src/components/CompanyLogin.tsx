@@ -2,16 +2,35 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTE_PATHS } from "../router/routes";
-import { api, ApiError } from "../utils/api"; // 导入 api 和 ApiError
+import { api, ApiError } from "../utils/api";
 
 // 公司数据接口
 interface CompanyData {
+  companyName: string; // 公司名称
+  taxId: string; // 新增：公司税号
+  address?: string; // 公司地址
+  contactPerson: string; // 联系人
+  phone: string; // 联系电话
+
+  // 开户银行信息
+  bankName: string; // 开户银行名称
+  bankAccount: string; // 银行账户
+  bankCode: string; // 开户银行行号
+}
+
+// 表单数据接口
+interface FormData {
+  // 公司基本信息
   companyName: string;
+  taxId: string;
   address: string;
-  contact1: string;
-  phone1: string;
-  contact2?: string;
-  phone2?: string;
+  contactPerson: string;
+  phone: string;
+
+  // 开户银行信息
+  bankName: string;
+  bankAccount: string;
+  bankCode: string;
 }
 
 // API响应接口
@@ -24,20 +43,27 @@ interface ApiResponse<T = any> {
 
 const CompanyLogin: React.FC = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
+    // 公司基本信息
     companyName: "",
+    taxId: "",
     address: "",
-    contact1: "",
-    phone1: "",
-    contact2: "",
-    phone2: "",
+    contactPerson: "",
+    phone: "",
+
+    // 开户银行信息
+    bankName: "",
+    bankAccount: "",
+    bankCode: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -56,32 +82,44 @@ const CompanyLogin: React.FC = () => {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
+    // 公司基本信息验证
     if (!formData.companyName.trim()) {
       newErrors.companyName = "请输入公司名称";
+    } else if (formData.companyName.trim().length < 2) {
+      newErrors.companyName = "公司名称至少2个字符";
     }
 
-    // if (!formData.address.trim()) {
-    //   newErrors.address = "请输入公司地址";
-    // }
-
-    if (!formData.contact1.trim()) {
-      newErrors.contact1 = "请输入主要联系人 姓名";
+    if (!formData.taxId.trim()) {
+      newErrors.taxId = "请输入公司税号";
+    } else if (formData.taxId.trim().length < 5) {
+      newErrors.taxId = "税号格式不正确";
     }
 
-    if (!formData.phone1.trim()) {
-      newErrors.phone1 = "请输入主要联系人 电话";
-    } else if (!/^1[3-9]\d{9}$/.test(formData.phone1)) {
-      newErrors.phone1 = "请输入正确的手机号码";
+    if (!formData.contactPerson.trim()) {
+      newErrors.contactPerson = "请输入联系人姓名";
     }
 
-    // 联系人2和电话2是可选的，但如果填写了联系人2，电话2也必须填写
-    if (formData.contact2.trim() && !formData.phone2.trim()) {
-      newErrors.phone2 = "请输入备用联系人 电话";
-    } else if (
-      formData.phone2.trim() &&
-      !/^1[3-9]\d{9}$/.test(formData.phone2)
-    ) {
-      newErrors.phone2 = "请输入正确的手机号码";
+    if (!formData.phone.trim()) {
+      newErrors.phone = "请输入联系电话";
+    } else if (!/^1[3-9]\d{9}$/.test(formData.phone)) {
+      newErrors.phone = "请输入正确的手机号码";
+    }
+
+    // 开户银行信息验证
+    if (!formData.bankName.trim()) {
+      newErrors.bankName = "请输入开户银行名称";
+    }
+
+    if (!formData.bankAccount.trim()) {
+      newErrors.bankAccount = "请输入银行账户";
+    } else if (!/^\d{1,30}$/.test(formData.bankAccount.trim())) {
+      newErrors.bankAccount = "银行账户应为数字";
+    }
+
+    if (!formData.bankCode.trim()) {
+      newErrors.bankCode = "请输入开户银行行号";
+    } else if (!/^\d{12}$/.test(formData.bankCode.trim())) {
+      newErrors.bankCode = "银行行号应为12位数字";
     }
 
     setErrors(newErrors);
@@ -90,7 +128,7 @@ const CompanyLogin: React.FC = () => {
 
   // 保存公司信息到数据库的函数
   const saveCompanyInfo = async (
-    companyData: CompanyData
+    companyData: CompanyData,
   ): Promise<ApiResponse> => {
     try {
       console.log("正在保存公司信息到API:", companyData);
@@ -112,10 +150,8 @@ const CompanyLogin: React.FC = () => {
       let errorMessage = "保存失败，请稍后重试";
 
       if (error instanceof ApiError) {
-        // 使用自定义的错误消息
         errorMessage = error.message;
 
-        // 可以根据状态码提供更具体的错误信息
         if (error.status === 400) {
           errorMessage = "数据格式错误，请检查输入信息";
         } else if (error.status === 409) {
@@ -153,22 +189,23 @@ const CompanyLogin: React.FC = () => {
       // 准备要发送的数据
       const companyData: CompanyData = {
         companyName: formData.companyName.trim(),
-        address: formData.address.trim(),
-        contact1: formData.contact1.trim(),
-        phone1: formData.phone1.trim(),
-        ...(formData.contact2.trim() && { contact2: formData.contact2.trim() }),
-        ...(formData.phone2.trim() && { phone2: formData.phone2.trim() }),
+        taxId: formData.taxId.trim(),
+        address: formData.address.trim() || "",
+        contactPerson: formData.contactPerson.trim(),
+        phone: formData.phone.trim(),
+
+        // 开户银行信息
+        bankName: formData.bankName.trim(),
+        bankAccount: formData.bankAccount.trim(),
+        bankCode: formData.bankCode.trim(),
       };
 
       // 调用API保存到数据库
       const result = await saveCompanyInfo(companyData);
 
       if (result.success) {
-        // 同时保存到本地存储
-        // localStorage.setItem("companyInfo", JSON.stringify(companyData));
-
         setIsSuccess(true);
-        setSubmitMessage(" 公司信息已成功保存到数据库！");
+        setSubmitMessage("公司信息已成功保存到数据库！");
 
         // 3秒后跳转到客户信息页面
         setTimeout(() => {
@@ -194,7 +231,7 @@ const CompanyLogin: React.FC = () => {
 
   return (
     <div className="h-screen bg-linear-to-br from-blue-50 to-gray-100 overflow-hidden">
-      <div className="bg-white shadow-xl h-full overflow-y-hidden">
+      <div className="bg-white shadow-xl h-full overflow-y-auto">
         {/* 头部装饰区域 */}
         <div className="bg-linear-to-r from-blue-600 to-purple-700 px-6! sm:px-8! lg:px-12! py-10! text-white w-full">
           <div className="flex items-center space-x-4 sm:space-x-6">
@@ -206,9 +243,9 @@ const CompanyLogin: React.FC = () => {
         </div>
 
         {/* 主内容区域 - 使用三列布局 */}
-        <div className="pl-8! pr-4! sm:pl-12! sm:pr-6! lg:pl-16! lg:pr-8! py-6! sm:py-8! lg:py-12! w-full">
+        <div className="px-4! sm:px-8! lg:px-12! py-6! sm:py-8! lg:py-12! w-full">
           <form
-            className="max-w-6xl mx-auto space-y-6 sm:space-y-8"
+            className="max-w-7xl mx-auto space-y-6 sm:space-y-8"
             onSubmit={handleSubmit}
           >
             {/* 提交状态提示 */}
@@ -237,21 +274,24 @@ const CompanyLogin: React.FC = () => {
 
             {/* 三列布局容器 */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-              {/* 第一列: 公司信息 */}
-              <div className="lg:col-span-1">
+              {/* 第一列: 公司基本信息 */}
+              <div className="lg:col-span-2">
                 <div className="bg-linear-to-br from-blue-50 to-blue-100 rounded-2xl p-6 sm:p-8 shadow-lg h-full">
                   <div className="flex items-center space-x-3 mb-6">
                     <div className="text-3xl text-blue-600">🏢</div>
                     <h3 className="text-xl sm:text-2xl font-semibold text-blue-800">
-                      公司信息
+                      公司基本信息
                     </h3>
+                    <span className="text-sm text-blue-600 bg-blue-200 px-2 py-1 rounded">
+                      必填
+                    </span>
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* 公司名称 */}
                     <div className="space-y-2">
-                      <label className="block text-lg font-medium text-gray-800">
-                        公司名称 <span className="text-red-500 text-xl">*</span>
+                      <label className="block text-sm font-medium text-gray-800">
+                        公司名称 <span className="text-red-500 ml-1">*</span>
                       </label>
                       <div className="relative">
                         <input
@@ -261,18 +301,18 @@ const CompanyLogin: React.FC = () => {
                           onChange={handleChange}
                           placeholder="请输入公司全称"
                           disabled={isSubmitting}
-                          className={`w-full px-4 sm:px-5 py-3 sm:py-4 text-base sm:text-lg border-2 ${
+                          className={`w-full px-4 py-3 text-base border-2 ${
                             errors.companyName
                               ? "border-red-400 focus:border-red-500"
                               : "border-gray-300 focus:border-blue-500"
-                          } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                          } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
                         />
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                           🏢
                         </div>
                       </div>
                       {errors.companyName && (
-                        <p className="mt-1 text-red-600 text-sm font-medium">
+                        <p className="mt-1 text-red-600 text-sm">
                           <span className="inline-flex items-center">
                             <span className="mr-1">⚠️</span>
                             {errors.companyName}
@@ -281,183 +321,235 @@ const CompanyLogin: React.FC = () => {
                       )}
                     </div>
 
-                    {/* 公司地址 */}
+                    {/* 公司税号 */}
                     <div className="space-y-2">
-                      <label className="block text-lg font-medium text-gray-800">
-                        公司地址
-                      </label>
-                      <div className="relative">
-                        <textarea
-                          name="address"
-                          value={formData.address}
-                          onChange={handleChange as any}
-                          placeholder="请输入详细地址（可选）"
-                          rows={3}
-                          disabled={isSubmitting}
-                          className={`w-full px-4 sm:px-5 py-3 sm:py-4 text-base sm:text-lg border-2 ${
-                            errors.address
-                              ? "border-red-400 focus:border-red-500"
-                              : "border-gray-300 focus:border-blue-500"
-                          } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 transition-all duration-200 resize-none disabled:bg-gray-100 disabled:cursor-not-allowed`}
-                        />
-                      </div>
-                      {/* {errors.address && (
-                        <p className="mt-1 text-red-600 text-sm font-medium">
-                          <span className="inline-flex items-center">
-                            <span className="mr-1">⚠️</span>
-                            {errors.address}
-                          </span>
-                        </p>
-                      )} */}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 第二列: 主要联系人信息 */}
-              <div className="lg:col-span-1">
-                <div className="bg-linear-to-br from-green-50 to-green-100 rounded-2xl p-6 sm:p-8 shadow-lg h-full">
-                  <div className="flex items-center space-x-3 mb-6">
-                    <div className="text-3xl text-green-600">👥</div>
-                    <h3 className="text-xl sm:text-2xl font-semibold text-green-800">
-                      主要联系人
-                    </h3>
-                  </div>
-
-                  <div className="space-y-6">
-                    {/* 主要联系人 */}
-                    <div className="space-y-2">
-                      <label className="block text-lg font-medium text-gray-800">
-                        联系人姓名{" "}
-                        <span className="text-red-500 text-xl">*</span>
+                      <label className="block text-sm font-medium text-gray-800">
+                        公司税号 <span className="text-red-500 ml-1">*</span>
                       </label>
                       <div className="relative">
                         <input
                           type="text"
-                          name="contact1"
-                          value={formData.contact1}
+                          name="taxId"
+                          value={formData.taxId}
                           onChange={handleChange}
-                          placeholder="姓名"
+                          placeholder="请输入公司税号"
                           disabled={isSubmitting}
-                          className={`w-full px-4 sm:px-5 py-3 sm:py-4 text-base sm:text-lg border-2 ${
-                            errors.contact1
+                          className={`w-full px-4 py-3 text-base border-2 ${
+                            errors.taxId
                               ? "border-red-400 focus:border-red-500"
                               : "border-gray-300 focus:border-blue-500"
-                          } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                          } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                        />
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                          🔢
+                        </div>
+                      </div>
+                      {errors.taxId && (
+                        <p className="mt-1 text-red-600 text-sm">
+                          <span className="inline-flex items-center">
+                            <span className="mr-1">⚠️</span>
+                            {errors.taxId}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+
+                    {/* 联系人 */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-800">
+                        联系人 <span className="text-red-500 ml-1">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          name="contactPerson"
+                          value={formData.contactPerson}
+                          onChange={handleChange}
+                          placeholder="联系人姓名"
+                          disabled={isSubmitting}
+                          className={`w-full px-4 py-3 text-base border-2 ${
+                            errors.contactPerson
+                              ? "border-red-400 focus:border-red-500"
+                              : "border-gray-300 focus:border-blue-500"
+                          } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
                         />
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                           👤
                         </div>
                       </div>
-                      {errors.contact1 && (
-                        <p className="mt-1 text-red-600 text-sm font-medium">
+                      {errors.contactPerson && (
+                        <p className="mt-1 text-red-600 text-sm">
                           <span className="inline-flex items-center">
                             <span className="mr-1">⚠️</span>
-                            {errors.contact1}
+                            {errors.contactPerson}
                           </span>
                         </p>
                       )}
                     </div>
 
-                    {/* 主要联系人电话 */}
+                    {/* 联系电话 */}
                     <div className="space-y-2">
-                      <label className="block text-lg font-medium text-gray-800">
-                        联系电话 <span className="text-red-500 text-xl">*</span>
+                      <label className="block text-sm font-medium text-gray-800">
+                        联系电话 <span className="text-red-500 ml-1">*</span>
                       </label>
                       <div className="relative">
                         <input
                           type="tel"
-                          name="phone1"
-                          value={formData.phone1}
+                          name="phone"
+                          value={formData.phone}
                           onChange={handleChange}
                           placeholder="手机号码"
                           disabled={isSubmitting}
-                          className={`w-full px-4 sm:px-5 py-3 sm:py-4 text-base sm:text-lg border-2 ${
-                            errors.phone1
+                          className={`w-full px-4 py-3 text-base border-2 ${
+                            errors.phone
                               ? "border-red-400 focus:border-red-500"
                               : "border-gray-300 focus:border-blue-500"
-                          } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                          } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
                         />
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                           📱
                         </div>
                       </div>
-                      {errors.phone1 && (
-                        <p className="mt-1 text-red-600 text-sm font-medium">
+                      {errors.phone && (
+                        <p className="mt-1 text-red-600 text-sm">
                           <span className="inline-flex items-center">
                             <span className="mr-1">⚠️</span>
-                            {errors.phone1}
+                            {errors.phone}
                           </span>
                         </p>
                       )}
                     </div>
                   </div>
+
+                  {/* 公司地址 */}
+                  <div className="mt-6 space-y-2">
+                    <label className="block text-sm font-medium text-gray-800">
+                      公司地址
+                    </label>
+                    <div className="relative">
+                      <textarea
+                        name="address"
+                        value={formData.address}
+                        onChange={handleChange}
+                        placeholder="请输入详细地址（可选）"
+                        rows={3}
+                        disabled={isSubmitting}
+                        className="w-full px-4 py-3 text-base border-2 border-gray-300 placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* 第三列: 备用联系人信息 */}
+              {/* 第二列: 开户银行信息 */}
               <div className="lg:col-span-1">
-                <div className="bg-linear-to-br from-purple-50 to-purple-100 rounded-2xl p-6 sm:p-8 shadow-lg h-full">
+                <div className="bg-linear-to-br from-green-50 to-green-100 rounded-2xl p-6 sm:p-8 shadow-lg h-full">
                   <div className="flex items-center space-x-3 mb-6">
-                    <div className="text-3xl text-purple-600">👥</div>
-                    <h3 className="text-xl sm:text-2xl font-semibold text-purple-800">
-                      备用联系人
+                    <div className="text-3xl text-green-600">🏦</div>
+                    <h3 className="text-xl sm:text-2xl font-semibold text-green-800">
+                      开户银行信息
                     </h3>
-                    <span className="text-sm text-purple-600 bg-purple-200 px-2 py-1 rounded">
-                      可选
+                    <span className="text-sm text-green-600 bg-green-200 px-2 py-1 rounded">
+                      必填
                     </span>
                   </div>
 
                   <div className="space-y-6">
-                    {/* 备用联系人 */}
+                    {/* 开户银行名称 */}
                     <div className="space-y-2">
-                      <label className="block text-lg font-medium text-gray-800">
-                        联系人姓名
+                      <label className="block text-sm font-medium text-gray-800">
+                        开户银行 <span className="text-red-500 ml-1">*</span>
                       </label>
                       <div className="relative">
                         <input
                           type="text"
-                          name="contact2"
-                          value={formData.contact2}
+                          name="bankName"
+                          value={formData.bankName}
                           onChange={handleChange}
-                          placeholder="姓名（可选）"
+                          placeholder="请输入开户银行名称"
                           disabled={isSubmitting}
-                          className="w-full px-4 sm:px-5 py-3 sm:py-4 text-base sm:text-lg border-2 border-gray-300 placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          className={`w-full px-4 py-3 text-base border-2 ${
+                            errors.bankName
+                              ? "border-red-400 focus:border-red-500"
+                              : "border-gray-300 focus:border-blue-500"
+                          } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
                         />
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                          👤
+                          🏦
                         </div>
                       </div>
+                      {errors.bankName && (
+                        <p className="mt-1 text-red-600 text-sm">
+                          <span className="inline-flex items-center">
+                            <span className="mr-1">⚠️</span>
+                            {errors.bankName}
+                          </span>
+                        </p>
+                      )}
                     </div>
 
-                    {/* 备用联系人电话 */}
+                    {/* 银行账户 */}
                     <div className="space-y-2">
-                      <label className="block text-lg font-medium text-gray-800">
-                        联系电话
+                      <label className="block text-sm font-medium text-gray-800">
+                        银行账户 <span className="text-red-500 ml-1">*</span>
                       </label>
                       <div className="relative">
                         <input
-                          type="tel"
-                          name="phone2"
-                          value={formData.phone2}
+                          type="text"
+                          name="bankAccount"
+                          value={formData.bankAccount}
                           onChange={handleChange}
-                          placeholder="手机号码（可选）"
+                          placeholder="请输入银行账户"
                           disabled={isSubmitting}
-                          className={`w-full px-4 sm:px-5 py-3 sm:py-4 text-base sm:text-lg border-2 ${
-                            errors.phone2
+                          className={`w-full px-4 py-3 text-base border-2 ${
+                            errors.bankAccount
                               ? "border-red-400 focus:border-red-500"
                               : "border-gray-300 focus:border-blue-500"
-                          } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                          } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
                         />
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                          📱
+                          💳
                         </div>
                       </div>
-                      {errors.phone2 && (
-                        <p className="mt-1 text-red-600 text-sm font-medium">
+                      {errors.bankAccount && (
+                        <p className="mt-1 text-red-600 text-sm">
                           <span className="inline-flex items-center">
                             <span className="mr-1">⚠️</span>
-                            {errors.phone2}
+                            {errors.bankAccount}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+
+                    {/* 开户银行行号 */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-800">
+                        银行行号 <span className="text-red-500 ml-1">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          name="bankCode"
+                          value={formData.bankCode}
+                          onChange={handleChange}
+                          placeholder="请输入12位银行行号"
+                          maxLength={12}
+                          disabled={isSubmitting}
+                          className={`w-full px-4 py-3 text-base border-2 ${
+                            errors.bankCode
+                              ? "border-red-400 focus:border-red-500"
+                              : "border-gray-300 focus:border-blue-500"
+                          } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                        />
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                          🔢
+                        </div>
+                      </div>
+                      {errors.bankCode && (
+                        <p className="mt-1 text-red-600 text-sm">
+                          <span className="inline-flex items-center">
+                            <span className="mr-1">⚠️</span>
+                            {errors.bankCode}
                           </span>
                         </p>
                       )}
@@ -467,9 +559,9 @@ const CompanyLogin: React.FC = () => {
               </div>
             </div>
 
-            {/* 温馨提示和按钮区域 - 占满三列 */}
+            {/* 温馨提示和按钮区域 */}
             <div className="lg:col-span-3 pt-6 sm:pt-8">
-              <div className="bg-linear-to-r from-yellow-50 to-orange-50 rounded-2xl p-6 sm:p-8 mb-6 sm:mb-8 border border-yellow-200 mt-5!">
+              <div className="bg-linear-to-r from-yellow-50 to-orange-50 rounded-2xl p-6 sm:p-8 mb-6 sm:mb-8 border border-yellow-200">
                 <div className="flex items-start space-x-4">
                   <div className="text-2xl sm:text-3xl text-yellow-600">💡</div>
                   <div className="flex-1">
@@ -477,28 +569,28 @@ const CompanyLogin: React.FC = () => {
                       温馨提示
                     </h4>
                     <ul className="text-yellow-700 text-sm sm:text-base space-y-2">
-                      {/* <li className="flex items-start">
-                        <span className="mr-2">•</span>
-                        <span>填写的信息将同时保存在服务器和本地浏览器中</span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="mr-2">•</span>
-                        <span>您可以在"客户信息"页面随时修改这些信息</span>
-                      </li> */}
                       <li className="flex items-start">
                         <span className="mr-2">•</span>
                         <span>带有红色星号(*)标记的为必填项</span>
                       </li>
                       <li className="flex items-start">
                         <span className="mr-2">•</span>
-                        <span>备用联系人信息为选填项，可根据需要填写</span>
+                        <span>公司税号是必填项，用于发票开具</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>银行账户信息为必填项，用于付款结算</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>银行行号应为12位数字</span>
                       </li>
                     </ul>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6 justify-center mt-5! mb-5!">
+              <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6 justify-center">
                 <button
                   type="submit"
                   disabled={isSubmitting}
