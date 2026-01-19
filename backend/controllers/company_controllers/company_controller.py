@@ -46,39 +46,16 @@ class CompanyAPI(MethodView):
             if not data:
                 return error_400('请求数据不能为空')
             
-            # 🌟 前端字段名到后端字段名的映射
-            field_mapping = {
-                'companyName': 'company_name',
-                'companyAddress': 'company_address',  # 注意：前台是 address，后台是 company_address
-                'address': 'company_address',  # 添加这个映射
-                'contact1': 'customer_name1',
-                'customerName1': 'customer_name1',
-                'phone1': 'customer_phone1',
-                'customerPhone1': 'customer_phone1',
-                'contact2': 'customer_name2',
-                'customerName2': 'customer_name2',
-                'phone2': 'customer_phone2',
-                'customerPhone2': 'customer_phone2',
-                'remarks': 'remarks'
-            }
+            print(f"控制器接收到的数据: {data}")
             
-            # 转换字段名
-            backend_data = {}
-            for frontend_key, value in data.items():
-                if frontend_key in field_mapping:
-                    backend_key = field_mapping[frontend_key]
-                    backend_data[backend_key] = value
-                else:
-                    # 如果不在映射中，直接使用
-                    backend_data[frontend_key] = value
-            
-            print(f"接收到的数据: {data}")
-            print(f"转换后的数据: {backend_data}")
-            
+            # 这里不进行字段转换，直接传递原始数据给 service
+            # service/repository 会处理字段映射
             db = get_db()
             company_service = CompanyService(db, current_app.config)
             
-            result = company_service.create_company(backend_data)
+            result = company_service.create_company(data)
+
+            print(f"创建客户结果: {result}")
             
             if result['success']:
                 return success_200(result['message'], result.get('data'))
@@ -93,38 +70,16 @@ class CompanyAPI(MethodView):
         """更新客户"""
         try:
             data = request.get_json()
-            print(f"解析后的更新数据: {data}")
             
             if not data:
                 return error_400('请求数据不能为空')
             
-            # 添加字段映射，确保前后端字段名一致
-            field_mapping = {
-                'companyName': 'company_name',
-                'address': 'company_address',
-                'contact1': 'customer_name1',
-                'phone1': 'customer_phone1',
-                'contact2': 'customer_name2',
-                'phone2': 'customer_phone2',
-                'remarks': 'remarks'
-            }
-            
-            # 转换字段名
-            backend_data = {}
-            for frontend_key, value in data.items():
-                if frontend_key in field_mapping:
-                    backend_key = field_mapping[frontend_key]
-                    backend_data[backend_key] = value
-                else:
-                    backend_data[frontend_key] = value
-            
             print(f"PUT 接收到的数据: {data}")
-            print(f"PUT 转换后的数据: {backend_data}")
             
             db = get_db()
             company_service = CompanyService(db, current_app.config)
             
-            result = company_service.update_company(company_id, backend_data)
+            result = company_service.update_company(company_id, data)
             
             if result['success']:
                 return success_200(result['message'], result.get('data'))
@@ -161,17 +116,15 @@ class CompanySearchAPI(MethodView):
         """搜索客户"""
         try:
             keyword = request.args.get('q', '')
+            page = request.args.get('page', 1, type=int)
+            page_size = request.args.get('pageSize', 20, type=int)
             
             db = get_db()
             company_service = CompanyService(db, current_app.config)
             
-            companies = company_service.search_companies(keyword)
+            result = company_service.search_companies(keyword, page, page_size)
             
-            return success_200('搜索完成', {
-                'keyword': keyword,
-                'results': companies,
-                'count': len(companies)
-            })
+            return success_200('搜索完成', result)
             
         except Exception as e:
             current_app.logger.error(f'搜索客户错误: {str(e)}')
@@ -193,7 +146,10 @@ class CompanyBatchAPI(MethodView):
             
             result = company_service.batch_delete_companies(company_ids)
             
-            return success_200(result['message'], result.get('data'))
+            if result['success']:
+                return success_200(result['message'], result.get('data'))
+            else:
+                return error_400(result['message'], result.get('errors', []))
             
         except Exception as e:
             current_app.logger.error(f'批量删除客户错误: {str(e)}')
@@ -248,6 +204,25 @@ def get_companies_list():
         current_app.logger.error(f'获取客户列表错误: {str(e)}')
         return error_500(f'获取客户列表失败: {str(e)}')
 
+# 客户详情
+@company_bp.route('/companies/<company_id>/details', methods=['GET'])
+def get_company_details(company_id):
+    """获取客户详细信息"""
+    try:
+        db = get_db()
+        company_service = CompanyService(db, current_app.config)
+        
+        result = company_service.get_company_with_details(company_id)
+        
+        if result:
+            return success_200('获取客户详情成功', result)
+        else:
+            return error_404('客户不存在')
+        
+    except Exception as e:
+        current_app.logger.error(f'获取客户详情错误: {str(e)}')
+        return error_500(f'获取客户详情失败: {str(e)}')
+
 # 客户统计
 @company_bp.route('/companies/stats', methods=['GET'])
 def get_companies_stats():
@@ -292,3 +267,77 @@ def export_companies():
     except Exception as e:
         current_app.logger.error(f'导出客户数据错误: {str(e)}')
         return error_500(f'导出客户数据失败: {str(e)}')
+
+# 验证公司税号
+@company_bp.route('/companies/validate/tax', methods=['POST'])
+def validate_company_tax():
+    """验证公司税号"""
+    try:
+        data = request.get_json()
+        tax_id = data.get('taxId')
+        
+        if not tax_id:
+            return error_400('请提供税号')
+        
+        db = get_db()
+        company_service = CompanyService(db, current_app.config)
+        
+        result = company_service.validate_company_tax_id(tax_id)
+        
+        if result['valid']:
+            return success_200('税号验证通过', {'exists': result['exists']})
+        else:
+            return error_400(result['message'])
+        
+    except Exception as e:
+        current_app.logger.error(f'验证税号错误: {str(e)}')
+        return error_500(f'验证税号失败: {str(e)}')
+
+# 验证银行账户
+@company_bp.route('/companies/validate/bank', methods=['POST'])
+def validate_bank_account():
+    """验证银行账户"""
+    try:
+        data = request.get_json()
+        bank_account = data.get('bankAccount')
+        company_id = data.get('companyId')
+        
+        if not bank_account:
+            return error_400('请提供银行账户')
+        
+        db = get_db()
+        company_service = CompanyService(db, current_app.config)
+        
+        result = company_service.validate_bank_account(bank_account, company_id)
+        
+        if result['valid']:
+            return success_200('银行账户验证通过', {'exists': result['exists']})
+        else:
+            return error_400(result['message'])
+        
+    except Exception as e:
+        current_app.logger.error(f'验证银行账户错误: {str(e)}')
+        return error_500(f'验证银行账户失败: {str(e)}')
+
+# 获取下拉选择列表
+@company_bp.route('/companies/dropdown', methods=['GET'])
+def get_companies_dropdown():
+    """获取客户下拉选择列表"""
+    try:
+        db = get_db()
+        company_service = CompanyService(db, current_app.config)
+        
+        companies = company_service.get_companies_for_dropdown()
+        
+        return success_200('获取客户列表成功', {
+            'companies': companies,
+            'total': len(companies)
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f'获取客户下拉列表错误: {str(e)}')
+        return error_500(f'获取客户下拉列表失败: {str(e)}')
+        
+    except Exception as e:
+        print(f"测试接口错误: {str(e)}")
+        return jsonify({'success': False, 'message': f'测试接口错误: {str(e)}'}), 500

@@ -6,31 +6,31 @@ import { api, ApiError } from "../utils/api";
 
 // 公司数据接口
 interface CompanyData {
-  companyName: string; // 公司名称
-  taxId: string; // 新增：公司税号
-  address?: string; // 公司地址
-  contactPerson: string; // 联系人
+  company_name: string; // 公司名称
+  tax_id: string; // 新增：公司税号
+  company_address?: string; // 公司地址
+  contact_person: string; // 联系人
   phone: string; // 联系电话
 
   // 开户银行信息
-  bankName: string; // 开户银行名称
-  bankAccount: string; // 银行账户
-  bankCode: string; // 开户银行行号
+  bank_name: string; // 开户银行名称
+  bank_account: string; // 银行账户
+  bank_code: string; // 开户银行行号
 }
 
 // 表单数据接口
 interface FormData {
   // 公司基本信息
-  companyName: string;
-  taxId: string;
-  address: string;
-  contactPerson: string;
+  company_name: string;
+  tax_id: string;
+  company_address: string;
+  contact_person: string;
   phone: string;
 
   // 开户银行信息
-  bankName: string;
-  bankAccount: string;
-  bankCode: string;
+  bank_name: string;
+  bank_account: string;
+  bank_code: string;
 }
 
 // API响应接口
@@ -45,16 +45,16 @@ const CompanyLogin: React.FC = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({
     // 公司基本信息
-    companyName: "",
-    taxId: "",
-    address: "",
-    contactPerson: "",
+    company_name: "",
+    tax_id: "",
+    company_address: "",
+    contact_person: "",
     phone: "",
 
     // 开户银行信息
-    bankName: "",
-    bankAccount: "",
-    bankCode: "",
+    bank_name: "",
+    bank_account: "",
+    bank_code: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,20 +83,20 @@ const CompanyLogin: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     // 公司基本信息验证
-    if (!formData.companyName.trim()) {
-      newErrors.companyName = "请输入公司名称";
-    } else if (formData.companyName.trim().length < 2) {
-      newErrors.companyName = "公司名称至少2个字符";
+    if (!formData.company_name.trim()) {
+      newErrors.company_name = "请输入公司名称";
+    } else if (formData.company_name.trim().length < 2) {
+      newErrors.company_name = "公司名称至少2个字符";
     }
 
-    if (!formData.taxId.trim()) {
-      newErrors.taxId = "请输入公司税号";
-    } else if (formData.taxId.trim().length < 5) {
-      newErrors.taxId = "税号格式不正确";
+    if (!formData.tax_id.trim()) {
+      newErrors.tax_id = "请输入公司税号";
+    } else if (formData.tax_id.trim().length < 5) {
+      newErrors.tax_id = "税号格式不正确";
     }
 
-    if (!formData.contactPerson.trim()) {
-      newErrors.contactPerson = "请输入联系人姓名";
+    if (!formData.contact_person.trim()) {
+      newErrors.contact_person = "请输入联系人姓名";
     }
 
     if (!formData.phone.trim()) {
@@ -106,20 +106,20 @@ const CompanyLogin: React.FC = () => {
     }
 
     // 开户银行信息验证
-    if (!formData.bankName.trim()) {
-      newErrors.bankName = "请输入开户银行名称";
+    if (!formData.bank_name.trim()) {
+      newErrors.bank_name = "请输入开户银行名称";
     }
 
-    if (!formData.bankAccount.trim()) {
-      newErrors.bankAccount = "请输入银行账户";
-    } else if (!/^\d{1,30}$/.test(formData.bankAccount.trim())) {
-      newErrors.bankAccount = "银行账户应为数字";
+    if (!formData.bank_account.trim()) {
+      newErrors.bank_account = "请输入银行账户";
+    } else if (!/^\d{1,30}$/.test(formData.bank_account.trim())) {
+      newErrors.bank_account = "银行账户应为数字";
     }
 
-    if (!formData.bankCode.trim()) {
-      newErrors.bankCode = "请输入开户银行行号";
-    } else if (!/^\d{12}$/.test(formData.bankCode.trim())) {
-      newErrors.bankCode = "银行行号应为12位数字";
+    if (!formData.bank_code.trim()) {
+      newErrors.bank_code = "请输入开户银行行号";
+    } else if (!/^\d{12}$/.test(formData.bank_code.trim())) {
+      newErrors.bank_code = "银行行号应为12位数字";
     }
 
     setErrors(newErrors);
@@ -188,16 +188,16 @@ const CompanyLogin: React.FC = () => {
     try {
       // 准备要发送的数据
       const companyData: CompanyData = {
-        companyName: formData.companyName.trim(),
-        taxId: formData.taxId.trim(),
-        address: formData.address.trim() || "",
-        contactPerson: formData.contactPerson.trim(),
+        company_name: formData.company_name.trim(),
+        tax_id: formData.tax_id.trim(),
+        company_address: formData.company_address.trim() || "",
+        contact_person: formData.contact_person.trim(),
         phone: formData.phone.trim(),
 
         // 开户银行信息
-        bankName: formData.bankName.trim(),
-        bankAccount: formData.bankAccount.trim(),
-        bankCode: formData.bankCode.trim(),
+        bank_name: formData.bank_name.trim(),
+        bank_account: formData.bank_account.trim(),
+        bank_code: formData.bank_code.trim(),
       };
 
       // 调用API保存到数据库
@@ -296,13 +296,13 @@ const CompanyLogin: React.FC = () => {
                       <div className="relative">
                         <input
                           type="text"
-                          name="companyName"
-                          value={formData.companyName}
+                          name="company_name"
+                          value={formData.company_name}
                           onChange={handleChange}
                           placeholder="请输入公司全称"
                           disabled={isSubmitting}
                           className={`w-full px-4 py-3 text-base border-2 ${
-                            errors.companyName
+                            errors.company_name
                               ? "border-red-400 focus:border-red-500"
                               : "border-gray-300 focus:border-blue-500"
                           } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
@@ -311,11 +311,11 @@ const CompanyLogin: React.FC = () => {
                           🏢
                         </div>
                       </div>
-                      {errors.companyName && (
+                      {errors.company_name && (
                         <p className="mt-1 text-red-600 text-sm">
                           <span className="inline-flex items-center">
                             <span className="mr-1">⚠️</span>
-                            {errors.companyName}
+                            {errors.company_name}
                           </span>
                         </p>
                       )}
@@ -329,13 +329,13 @@ const CompanyLogin: React.FC = () => {
                       <div className="relative">
                         <input
                           type="text"
-                          name="taxId"
-                          value={formData.taxId}
+                          name="tax_id"
+                          value={formData.tax_id}
                           onChange={handleChange}
                           placeholder="请输入公司税号"
                           disabled={isSubmitting}
                           className={`w-full px-4 py-3 text-base border-2 ${
-                            errors.taxId
+                            errors.tax_id
                               ? "border-red-400 focus:border-red-500"
                               : "border-gray-300 focus:border-blue-500"
                           } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
@@ -344,11 +344,11 @@ const CompanyLogin: React.FC = () => {
                           🔢
                         </div>
                       </div>
-                      {errors.taxId && (
+                      {errors.tax_id && (
                         <p className="mt-1 text-red-600 text-sm">
                           <span className="inline-flex items-center">
                             <span className="mr-1">⚠️</span>
-                            {errors.taxId}
+                            {errors.tax_id}
                           </span>
                         </p>
                       )}
@@ -362,13 +362,13 @@ const CompanyLogin: React.FC = () => {
                       <div className="relative">
                         <input
                           type="text"
-                          name="contactPerson"
-                          value={formData.contactPerson}
+                          name="contact_person"
+                          value={formData.contact_person}
                           onChange={handleChange}
                           placeholder="联系人姓名"
                           disabled={isSubmitting}
                           className={`w-full px-4 py-3 text-base border-2 ${
-                            errors.contactPerson
+                            errors.contact_person
                               ? "border-red-400 focus:border-red-500"
                               : "border-gray-300 focus:border-blue-500"
                           } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
@@ -377,11 +377,11 @@ const CompanyLogin: React.FC = () => {
                           👤
                         </div>
                       </div>
-                      {errors.contactPerson && (
+                      {errors.contact_person && (
                         <p className="mt-1 text-red-600 text-sm">
                           <span className="inline-flex items-center">
                             <span className="mr-1">⚠️</span>
-                            {errors.contactPerson}
+                            {errors.contact_person}
                           </span>
                         </p>
                       )}
@@ -428,8 +428,8 @@ const CompanyLogin: React.FC = () => {
                     </label>
                     <div className="relative">
                       <textarea
-                        name="address"
-                        value={formData.address}
+                        name="company_address"
+                        value={formData.company_address}
                         onChange={handleChange}
                         placeholder="请输入详细地址（可选）"
                         rows={3}
@@ -463,13 +463,13 @@ const CompanyLogin: React.FC = () => {
                       <div className="relative">
                         <input
                           type="text"
-                          name="bankName"
-                          value={formData.bankName}
+                          name="bank_name"
+                          value={formData.bank_name}
                           onChange={handleChange}
                           placeholder="请输入开户银行名称"
                           disabled={isSubmitting}
                           className={`w-full px-4 py-3 text-base border-2 ${
-                            errors.bankName
+                            errors.bank_name
                               ? "border-red-400 focus:border-red-500"
                               : "border-gray-300 focus:border-blue-500"
                           } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
@@ -478,11 +478,11 @@ const CompanyLogin: React.FC = () => {
                           🏦
                         </div>
                       </div>
-                      {errors.bankName && (
+                      {errors.bank_name && (
                         <p className="mt-1 text-red-600 text-sm">
                           <span className="inline-flex items-center">
                             <span className="mr-1">⚠️</span>
-                            {errors.bankName}
+                            {errors.bank_name}
                           </span>
                         </p>
                       )}
@@ -496,13 +496,13 @@ const CompanyLogin: React.FC = () => {
                       <div className="relative">
                         <input
                           type="text"
-                          name="bankAccount"
-                          value={formData.bankAccount}
+                          name="bank_account"
+                          value={formData.bank_account}
                           onChange={handleChange}
                           placeholder="请输入银行账户"
                           disabled={isSubmitting}
                           className={`w-full px-4 py-3 text-base border-2 ${
-                            errors.bankAccount
+                            errors.bank_account
                               ? "border-red-400 focus:border-red-500"
                               : "border-gray-300 focus:border-blue-500"
                           } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
@@ -511,11 +511,11 @@ const CompanyLogin: React.FC = () => {
                           💳
                         </div>
                       </div>
-                      {errors.bankAccount && (
+                      {errors.bank_account && (
                         <p className="mt-1 text-red-600 text-sm">
                           <span className="inline-flex items-center">
                             <span className="mr-1">⚠️</span>
-                            {errors.bankAccount}
+                            {errors.bank_account}
                           </span>
                         </p>
                       )}
@@ -529,14 +529,14 @@ const CompanyLogin: React.FC = () => {
                       <div className="relative">
                         <input
                           type="text"
-                          name="bankCode"
-                          value={formData.bankCode}
+                          name="bank_code"
+                          value={formData.bank_code}
                           onChange={handleChange}
                           placeholder="请输入12位银行行号"
                           maxLength={12}
                           disabled={isSubmitting}
                           className={`w-full px-4 py-3 text-base border-2 ${
-                            errors.bankCode
+                            errors.bank_code
                               ? "border-red-400 focus:border-red-500"
                               : "border-gray-300 focus:border-blue-500"
                           } placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed`}
@@ -545,11 +545,11 @@ const CompanyLogin: React.FC = () => {
                           🔢
                         </div>
                       </div>
-                      {errors.bankCode && (
+                      {errors.bank_code && (
                         <p className="mt-1 text-red-600 text-sm">
                           <span className="inline-flex items-center">
                             <span className="mr-1">⚠️</span>
-                            {errors.bankCode}
+                            {errors.bank_code}
                           </span>
                         </p>
                       )}
