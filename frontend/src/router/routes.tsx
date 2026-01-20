@@ -7,7 +7,7 @@ import CompanyLogin from "../components/CompanyLogin";
 import CompanyInfo from "../components/CompanyInfo";
 import About from "../pages/About";
 import NotFound from "../pages/NotFound";
-import ContractPreview from "../contract/ContractPreview"; // 导入合同预览页面
+import ContractPreview from "../components/contract/ContractPreview"; // 导入合同预览页面
 
 // 路由配置数组
 export const routes: RouteObject[] = [

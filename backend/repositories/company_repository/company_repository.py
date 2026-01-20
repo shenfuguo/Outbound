@@ -34,10 +34,10 @@ class CompanyRepository(BaseRepository[CompanyMstModel]):
                 errors.append(f"{self._get_field_display_name(field)}不能为空")
         
         # 公司名称唯一性检查
-        if data.get('company_name'):
-            existing = self.filter_by(company_name=data['company_name'])
-            if existing and (not data.get('id') or existing[0].id != data.get('id')):
-                errors.append(f"公司名称 '{data['company_name']}' 已存在")
+        # if data.get('company_name'):
+        #     existing = self.filter_by(company_name=data['company_name'])
+        #     if existing and (not data.get('id') or existing[0].id != data.get('id')):
+        #         errors.append(f"公司名称 '{data['company_name']}' 已存在")
         
         # 税号验证
         if data.get('tax_id'):

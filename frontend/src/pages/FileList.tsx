@@ -51,7 +51,469 @@ interface ExtendedFileItem extends FileItem {
   hasContent?: boolean;
   pageCount?: number;
   mimeTimeFormatted?: string;
+  mimeType?: string;
 }
+
+// 文件预览信息接口
+interface FilePreviewInfo {
+  success: boolean;
+  fileId: string;
+  filePath: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  companyId: string;
+  message?: string;
+  status: string;
+}
+
+interface ApiResponse<T> {
+  data: T;
+  message: string;
+  status: string;
+  success?: boolean;
+}
+
+// 组合类型
+type FilePreviewInfoResponse = ApiResponse<FilePreviewInfo>;
+
+// PDF预览模态框组件
+interface PDFPreviewModalProps {
+  file: ExtendedFileItem | null;
+  onClose: () => void;
+  onDelete: (fileId: number) => Promise<void>; // 添加删除回调函数
+}
+
+// PDF预览模态框组件
+const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
+  file,
+  onClose,
+  onDelete,
+}) => {
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [fileInfo, setFileInfo] = useState<FilePreviewInfo | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  useEffect(() => {
+    const loadPDF = async () => {
+      if (!file || !file.id) {
+        setError("缺少文件信息");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // 获取文件预览信息
+        const fileDataResponse = await api.get<FilePreviewInfoResponse>(
+          `/files/${file.id}/preview`,
+          { companyId: file.companyId || "" },
+        );
+
+        console.log("文件预览信息响应:", fileDataResponse);
+
+        if (fileDataResponse && fileDataResponse.data) {
+          const fileData = fileDataResponse.data;
+
+          if (fileDataResponse.status === "success" || fileData.success) {
+            setFileInfo(fileData);
+
+            // 尝试获取PDF文件内容
+            try {
+              const pdfBlob = await api.get<Blob>(
+                `/files/${file.id}/content`,
+                { companyId: file.companyId || "" },
+                { responseType: "blob" as any },
+              );
+
+              if (pdfBlob) {
+                const blob = new Blob([pdfBlob as BlobPart], {
+                  type: "application/pdf",
+                });
+                const url = window.URL.createObjectURL(blob);
+                setPdfUrl(url);
+              } else {
+                // 如果没有获取到blob，尝试使用文件路径
+                if (fileData.filePath) {
+                  setPdfUrl(fileData.filePath);
+                } else {
+                  setError("获取PDF文件内容失败");
+                }
+              }
+            } catch (blobError) {
+              console.log("Blob获取失败，尝试使用文件路径:", blobError);
+              if (fileData.filePath) {
+                setPdfUrl(fileData.filePath);
+              } else {
+                setError("获取PDF文件内容失败");
+              }
+            }
+          } else {
+            setError(fileData.message || "获取文件信息失败");
+          }
+        } else {
+          setError("无效的响应格式");
+        }
+      } catch (err: any) {
+        console.error("加载PDF失败:", err);
+
+        // 检查是否是网络错误
+        if (
+          err.message?.includes("Failed to fetch") ||
+          err.message?.includes("Network Error")
+        ) {
+          setError("网络连接失败，请检查网络连接");
+        }
+        // 检查是否是404错误
+        else if (err.response?.status === 404) {
+          setError("文件不存在或已被删除");
+        }
+        // 检查是否是403错误
+        else if (err.response?.status === 403) {
+          setError("没有权限预览此文件");
+        }
+        // 检查是否是500错误
+        else if (err.response?.status === 500) {
+          setError("服务器内部错误");
+        }
+        // 其他错误
+        else if (err.response?.data?.message) {
+          setError(err.response.data.message);
+        } else {
+          setError("加载PDF文件失败");
+        }
+
+        // 如果预览接口失败，尝试使用下载接口
+        if (file?.id) {
+          const downloadUrl = `${api.getBaseURL()}/files/${file.id}/download`;
+          setPdfUrl(downloadUrl);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPDF();
+
+    // 清理函数
+    return () => {
+      if (pdfUrl && pdfUrl.startsWith("blob:")) {
+        window.URL.revokeObjectURL(pdfUrl);
+        console.log("PDF URL已清理");
+      }
+    };
+  }, [file?.id, file?.companyId]);
+
+  // 格式化文件大小
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  // 检查文件是否是PDF
+  const isPdfFile = (): boolean => {
+    if (!file) return false;
+
+    const fileName = file.originalName.toLowerCase();
+    const mimeType = file.mimeType?.toLowerCase() || "";
+
+    return fileName.endsWith(".pdf") || mimeType.includes("pdf");
+  };
+
+  // 处理删除文件
+  const handleDelete = async () => {
+    if (!file) return;
+
+    if (!showDeleteConfirm) {
+      setShowDeleteConfirm(true);
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await onDelete(file.id);
+      onClose(); // 关闭预览弹窗
+    } catch (err) {
+      console.error("删除失败:", err);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  if (!file) return null;
+
+  const isPdf = isPdfFile();
+
+  return (
+    <div className="fixed inset-0 backdrop-blur-sm bg-black/50! flex items-center justify-center z-100 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col">
+        {/* 头部 */}
+        <div className="bg-linear-to-r from-blue-600! to-purple-600! px-6 py-4 text-white flex justify-between items-center">
+          <div className="flex items-center">
+            <div className="mr-3! text-2xl">📄</div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-bold truncate">
+                PDF预览 - {file.originalName}
+              </h2>
+              <p className="text-blue-100 text-sm truncate">
+                文件ID: {file.id}{" "}
+                {file.companyId && `| 客户ID: ${file.companyId}`}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-white hover:text-gray-200 text-2xl ml-4"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* 内容区域 */}
+        <div className="flex-1 overflow-hidden p-4 bg-gray-50">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="animate-spin text-4xl text-blue-600! mb-4">
+                  ⏳
+                </div>
+                <p className="text-gray-600">正在加载文件...</p>
+                <p className="text-sm text-gray-500 mt-2">请稍候</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="text-6xl text-red-500 mb-4">❌</div>
+                <h3 className="text-xl font-medium text-gray-800 mb-2">
+                  加载失败
+                </h3>
+                <p className="text-gray-600! mb-4!">{error}</p>
+                {fileInfo?.filePath && (
+                  <p className="text-sm text-gray-500! mb-4! truncate">
+                    文件路径: {fileInfo.filePath}
+                  </p>
+                )}
+                {pdfUrl && (
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-500 mb-2">
+                      尝试通过下载链接查看:
+                    </p>
+                    <a
+                      href={pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <span className="mr-2">⬇️</span>
+                      下载文件
+                    </a>
+                  </div>
+                )}
+                <button
+                  onClick={onClose}
+                  className="mt-4 px-4! py-2! bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  关闭
+                </button>
+              </div>
+            </div>
+          ) : pdfUrl ? (
+            <div className="h-full w-full">
+              {isPdf ? (
+                <iframe
+                  src={`${pdfUrl}#view=FitH&toolbar=1&navpanes=1&scrollbar=1`}
+                  className="w-full h-full border border-gray-300 rounded-lg"
+                  title={`${file.originalName} 预览`}
+                  style={{ border: "none" }}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="text-6xl text-gray-400 mb-4">📁</div>
+                    <h3 className="text-xl font-medium text-gray-800 mb-2">
+                      不支持预览此文件格式
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      该文件类型不支持在线预览，请下载后查看
+                    </p>
+                    <a
+                      href={pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <span className="mr-2">⬇️</span>
+                      下载文件
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="text-6xl text-gray-400 mb-4">📄</div>
+                <h3 className="text-xl font-medium text-gray-800 mb-2">
+                  无法预览文件
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  文件加载失败，请尝试重新加载
+                </p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-4 py-2 bg-blue-600! text-white rounded-lg hover:bg-blue-700! transition-colors"
+                >
+                  重新加载
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 底部操作区 */}
+        <div className="border-t border-gray-200! px-6! py-4! flex justify-between items-center bg-gray-50">
+          <div className="text-sm text-gray-600 truncate">
+            {fileInfo ? (
+              <>
+                <span className="mr-4!">文件名: {fileInfo.fileName}</span>
+                <span>大小: {formatFileSize(fileInfo.fileSize)}</span>
+              </>
+            ) : (
+              <>
+                <span className="mr-4!">文件名: {file.originalName}</span>
+                <span>大小: {formatFileSize(Number(file.size))}</span>
+              </>
+            )}
+          </div>
+          <div className="flex space-x-3">
+            {/* 删除按钮 */}
+            {showDeleteConfirm ? (
+              <div className="flex items-center space-x-2 bg-red-50 p-2 rounded-lg">
+                <span className="text-sm text-red-700 font-medium">
+                  确定删除？
+                </span>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="px-3 py-1 bg-red-600! text-white! rounded hover:bg-red-700! transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                      删除中...
+                    </>
+                  ) : (
+                    "确认删除"
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-3 py-1 bg-gray-200! text-gray-700! rounded hover:bg-gray-300! transition-colors text-sm"
+                >
+                  取消
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4! py-2! bg-red-600! text-white! rounded-lg hover:bg-red-700! transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    删除中...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4! h-4! mr-2!"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                    删除文件
+                  </>
+                )}
+              </button>
+            )}
+
+            {pdfUrl && (
+              <>
+                <a
+                  href={pdfUrl}
+                  download={file.originalName}
+                  className="px-4! py-2! bg-blue-600! text-white! rounded-lg hover:bg-blue-700! transition-colors flex items-center"
+                >
+                  <svg
+                    className="w-4! h-4! mr-2!"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  下载
+                </a>
+                {isPdf && (
+                  <a
+                    href={pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4! py-2! bg-green-600! text-white! rounded-lg hover:bg-green-700! transition-colors flex items-center"
+                  >
+                    <svg
+                      className="w-4! h-4! mr-2!"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                      />
+                    </svg>
+                    新窗口打开
+                  </a>
+                )}
+              </>
+            )}
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-200! text-gray-700! rounded-lg hover:bg-gray-300! transition-colors"
+            >
+              关闭
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const FileList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -65,20 +527,21 @@ const FileList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [previewFile, setPreviewFile] = useState<ExtendedFileItem | null>(null);
   const pageSize = 10;
 
   // 计算分页信息
   const totalPages = useMemo(
     () => Math.ceil(total / pageSize),
-    [total, pageSize]
+    [total, pageSize],
   );
   const startIndex = useMemo(
     () => (currentPage - 1) * pageSize,
-    [currentPage, pageSize]
+    [currentPage, pageSize],
   );
   const endIndex = useMemo(
     () => Math.min(startIndex + pageSize, total),
-    [startIndex, pageSize, total]
+    [startIndex, pageSize, total],
   );
 
   // 调试信息
@@ -170,8 +633,8 @@ const FileList: React.FC = () => {
           file.fileType === "1"
             ? "合同"
             : file.fileType === "2"
-            ? "图纸"
-            : file.fileType,
+              ? "图纸"
+              : file.fileType,
         companyId: file.companyId || "",
       }));
 
@@ -215,7 +678,7 @@ const FileList: React.FC = () => {
         }`}
       >
         上一页
-      </button>
+      </button>,
     );
 
     // 页码按钮
@@ -236,13 +699,13 @@ const FileList: React.FC = () => {
             }`}
           >
             {i}
-          </button>
+          </button>,
         );
       } else if (i === currentPage - 2 || i === currentPage + 2) {
         buttons.push(
           <span key={`ellipsis-${i}`} className="px-2 py-2 text-gray-500">
             ...
-          </span>
+          </span>,
         );
       }
     }
@@ -260,7 +723,7 @@ const FileList: React.FC = () => {
         }`}
       >
         下一页
-      </button>
+      </button>,
     );
 
     return <>{buttons}</>;
@@ -287,6 +750,7 @@ const FileList: React.FC = () => {
         alert("删除成功！");
       } catch (err: any) {
         alert(`删除失败: ${err.message}`);
+        throw err; // 重新抛出错误，让预览弹窗可以处理
       }
     }
   };
@@ -295,7 +759,7 @@ const FileList: React.FC = () => {
   const handleDownload = async (file: ExtendedFileItem) => {
     try {
       const response = await fetch(
-        `${api.getBaseURL()}/files/${file.id}/download`
+        `${api.getBaseURL()}/files/${file.id}/download`,
       );
 
       if (!response.ok) {
@@ -314,6 +778,11 @@ const FileList: React.FC = () => {
     } catch (err: any) {
       alert(`下载失败: ${err.message}`);
     }
+  };
+
+  // 预览文件
+  const handlePreview = (file: ExtendedFileItem) => {
+    setPreviewFile(file);
   };
 
   const handleSearch = () => {
@@ -480,9 +949,6 @@ const FileList: React.FC = () => {
                 value={filterType}
                 onChange={(e) => {
                   setFilterType(e.target.value as any);
-                  // if (e.target.value === "all") {
-                  //   setSelectedCompany("all");
-                  // }
                 }}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
@@ -551,7 +1017,7 @@ const FileList: React.FC = () => {
                       <div className="col-span-2 hidden lg:flex items-center">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${getTypeBadgeClass(
-                            file.fileType
+                            file.fileType,
                           )}`}
                         >
                           {file.fileType}
@@ -563,20 +1029,21 @@ const FileList: React.FC = () => {
                       <div className="col-span-3 lg:col-span-2 flex items-center text-gray-600">
                         {formatDateSmart(file.uploadTime)}
                       </div>
-                      <div className="col-span-3 lg:col-span-1 flex items-center justify-end space-x-3">
+                      <div className="col-span-3 lg:col-span-1 flex items-center justify-end space-x-2">
+                        {/* 预览按钮 */}
                         <button
-                          onClick={() => handleDownload(file)}
+                          onClick={() => handlePreview(file)}
                           className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-200 hover:text-blue-800 transition-colors"
-                          title="下载"
+                          title="预览文件"
                         >
-                          ⬇️
+                          👁️
                         </button>
                         <button
-                          onClick={() => handleDelete(file.id)}
-                          className="w-8 h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200 hover:text-red-800 transition-colors"
-                          title="删除"
+                          onClick={() => handleDownload(file)}
+                          className="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center hover:bg-green-200 hover:text-green-800 transition-colors"
+                          title="下载文件"
                         >
-                          🗑️
+                          ⬇️
                         </button>
                       </div>
                     </div>
@@ -619,6 +1086,15 @@ const FileList: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* PDF预览模态框 */}
+      {previewFile && (
+        <PDFPreviewModal
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
+          onDelete={handleDelete} // 传递删除函数
+        />
+      )}
     </div>
   );
 };

@@ -1,6 +1,6 @@
 // src/pages/ContractPreview.tsx
 import React, { useState, useEffect, useMemo } from "react";
-import { api, ApiError } from "../utils/api";
+import { api, ApiError } from "../../utils/api";
 
 // 公司数据接口
 interface CompanyData {
@@ -356,7 +356,7 @@ const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
         // 1. 首先获取文件预览信息
         const fileDataResponse = await api.get<FilePreviewInfoResponse>(
           `/files/${fileId}/preview`,
-          { companyId: companyId }
+          { companyId: companyId },
         );
 
         if (fileDataResponse && fileDataResponse.data) {
@@ -370,7 +370,7 @@ const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
             const pdfBlob = await api.get<Blob>(
               `/files/${fileId}/content`,
               { companyId }, // params对象
-              { responseType: "blob" as any } // 配置对象
+              { responseType: "blob" as any }, // 配置对象
             );
 
             if (pdfBlob) {
@@ -584,7 +584,7 @@ const companyService = {
 const fileService = {
   async getCompanyFiles(
     companyId: string,
-    fileType: number = 1
+    fileType: number = 1,
   ): Promise<FileData[]> {
     try {
       console.log(`获取公司ID ${companyId} 的文件，文件类型: ${fileType}`);
@@ -620,12 +620,12 @@ const fileService = {
   // 新增：获取文件预览信息
   async getFilePreview(
     fileId: string,
-    companyId: string
+    companyId: string,
   ): Promise<FilePreviewInfo> {
     try {
       const filePreviewData = await api.get<FilePreviewInfo>(
         `/files/${fileId}/preview`,
-        { companyId: companyId }
+        { companyId: companyId },
       );
       return filePreviewData;
     } catch (error: any) {
@@ -725,13 +725,13 @@ const ContractPreview: React.FC = () => {
   const [selectedCompany, setSelectedCompany] = useState<string>("");
   const [allContracts, setAllContracts] = useState<ContractData[]>([]);
   const [filteredContracts, setFilteredContracts] = useState<ContractData[]>(
-    []
+    [],
   );
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingContracts, setIsLoadingContracts] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
   const [previewContract, setPreviewContract] = useState<ContractData | null>(
-    null
+    null,
   );
 
   // PDF预览状态
@@ -769,19 +769,19 @@ const ContractPreview: React.FC = () => {
 
   // 计算剩余金额
   const calculateRemainingAmount = (
-    contract: ContractData | NewContractData
+    contract: ContractData | NewContractData,
   ) => {
     const contractAmount =
       parseFloat(
         typeof contract.contractAmount === "string"
           ? contract.contractAmount
-          : contract.contractAmount.toString()
+          : contract.contractAmount.toString(),
       ) || 0;
     const paidAmount =
       parseFloat(
         typeof contract.paidAmount === "string"
           ? contract.paidAmount
-          : contract.paidAmount.toString()
+          : contract.paidAmount.toString(),
       ) || 0;
     return (contractAmount - paidAmount).toFixed(2);
   };
@@ -830,7 +830,7 @@ const ContractPreview: React.FC = () => {
 
         // 初始分页设置
         const totalPages = Math.ceil(
-          contractsData.length / pagination.pageSize
+          contractsData.length / pagination.pageSize,
         );
         setPagination((prev) => ({
           ...prev,
@@ -898,14 +898,14 @@ const ContractPreview: React.FC = () => {
     if (companyId) {
       const selectedCompanyData = companies.find((c) => c.id === companyId);
       const companyContracts = allContracts.filter(
-        (contract) => contract.companyId.toString() === companyId
+        (contract) => contract.companyId.toString() === companyId,
       );
 
       setFilteredContracts(companyContracts);
       setContractList(companyContracts);
 
       const totalPages = Math.ceil(
-        companyContracts.length / pagination.pageSize
+        companyContracts.length / pagination.pageSize,
       );
       setPagination((prev) => ({
         ...prev,
@@ -953,7 +953,7 @@ const ContractPreview: React.FC = () => {
       // 如果搜索词为空，恢复当前筛选结果
       if (selectedCompany) {
         const companyContracts = allContracts.filter(
-          (contract) => contract.companyId.toString() === selectedCompany
+          (contract) => contract.companyId.toString() === selectedCompany,
         );
         setFilteredContracts(companyContracts);
         setContractList(companyContracts);
@@ -966,7 +966,7 @@ const ContractPreview: React.FC = () => {
       const searchResults = (
         selectedCompany
           ? allContracts.filter(
-              (contract) => contract.companyId.toString() === selectedCompany
+              (contract) => contract.companyId.toString() === selectedCompany,
             )
           : allContracts
       ).filter((contract) => {
@@ -978,7 +978,7 @@ const ContractPreview: React.FC = () => {
         ];
 
         return searchFields.some((field) =>
-          field.toLowerCase().includes(term.toLowerCase())
+          field.toLowerCase().includes(term.toLowerCase()),
         );
       });
 
@@ -1124,7 +1124,7 @@ const ContractPreview: React.FC = () => {
   const handleInputChange = (
     index: number,
     field: keyof NewContractData,
-    value: string
+    value: string,
   ) => {
     setContractList((prev) => {
       const newList = [...prev];
@@ -1139,7 +1139,7 @@ const ContractPreview: React.FC = () => {
   const handleAmountChange = (
     index: number,
     field: "contractAmount" | "paidAmount" | "finalPaymentAmount",
-    value: string
+    value: string,
   ) => {
     // 验证是否为数字
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
@@ -1229,7 +1229,7 @@ const ContractPreview: React.FC = () => {
         // 更新现有合同
         result = await contractService.updateContract(
           contractData.id,
-          dataToSend
+          dataToSend,
         );
         setMessage({
           text: "合同更新成功",
@@ -1254,7 +1254,7 @@ const ContractPreview: React.FC = () => {
 
         if (selectedCompany) {
           updatedFiltered = contractsData.filter(
-            (contract) => contract.companyId.toString() === selectedCompany
+            (contract) => contract.companyId.toString() === selectedCompany,
           );
         }
 
@@ -1268,7 +1268,7 @@ const ContractPreview: React.FC = () => {
             ];
 
             return searchFields.some((field) =>
-              field.toLowerCase().includes(searchTerm.toLowerCase())
+              field.toLowerCase().includes(searchTerm.toLowerCase()),
             );
           });
         }
@@ -1307,7 +1307,7 @@ const ContractPreview: React.FC = () => {
       setContractList((prev) => {
         const newList = [...prev];
         const originalContract = allContracts.find(
-          (c) => c.id === (contractList[index] as any).id
+          (c) => c.id === (contractList[index] as any).id,
         );
         if (originalContract) {
           newList[index] = { ...originalContract, isEditing: false };
@@ -1338,8 +1338,8 @@ const ContractPreview: React.FC = () => {
               message.type === "success"
                 ? "bg-green-50 border border-green-200 text-green-800"
                 : message.type === "info"
-                ? "bg-blue-50 border border-blue-200 text-blue-800"
-                : "bg-red-50 border border-red-200 text-red-800"
+                  ? "bg-blue-50 border border-blue-200 text-blue-800"
+                  : "bg-red-50 border border-red-200 text-red-800"
             }`}
           >
             <div className="flex items-center">
@@ -1347,8 +1347,8 @@ const ContractPreview: React.FC = () => {
                 {message.type === "success"
                   ? "✅"
                   : message.type === "info"
-                  ? "ℹ️"
-                  : "❌"}
+                    ? "ℹ️"
+                    : "❌"}
               </span>
               <span className="font-medium">{message.text}</span>
             </div>
@@ -1567,8 +1567,8 @@ const ContractPreview: React.FC = () => {
                             isNewContract
                               ? "bg-blue-50"
                               : isEditing
-                              ? "bg-yellow-50"
-                              : "hover:bg-gray-50"
+                                ? "bg-yellow-50"
+                                : "hover:bg-gray-50"
                           } transition-colors duration-150`}
                         >
                           {/* 合同标题 */}
@@ -1581,7 +1581,7 @@ const ContractPreview: React.FC = () => {
                                   handleInputChange(
                                     absoluteIndex,
                                     "contractTitle",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 placeholder="合同标题"
@@ -1607,7 +1607,7 @@ const ContractPreview: React.FC = () => {
                                   handleInputChange(
                                     absoluteIndex,
                                     "mainContent",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 placeholder="主要内容"
@@ -1633,7 +1633,7 @@ const ContractPreview: React.FC = () => {
                                   handleInputChange(
                                     absoluteIndex,
                                     "memo",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 placeholder="备忘录"
@@ -1662,7 +1662,7 @@ const ContractPreview: React.FC = () => {
                                     handleAmountChange(
                                       absoluteIndex,
                                       "contractAmount",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   placeholder="0.00"
@@ -1678,7 +1678,7 @@ const ContractPreview: React.FC = () => {
                                 {typeof contract.contractAmount === "number"
                                   ? contract.contractAmount.toLocaleString()
                                   : parseFloat(
-                                      contract.contractAmount || "0"
+                                      contract.contractAmount || "0",
                                     ).toLocaleString()}
                               </span>
                             )}
@@ -1695,7 +1695,7 @@ const ContractPreview: React.FC = () => {
                                     handleAmountChange(
                                       absoluteIndex,
                                       "paidAmount",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   placeholder="0.00"
@@ -1711,7 +1711,7 @@ const ContractPreview: React.FC = () => {
                                 {typeof contract.paidAmount === "number"
                                   ? contract.paidAmount.toLocaleString()
                                   : parseFloat(
-                                      contract.paidAmount || "0"
+                                      contract.paidAmount || "0",
                                     ).toLocaleString()}
                               </span>
                             )}
@@ -1734,7 +1734,7 @@ const ContractPreview: React.FC = () => {
                                   handleInputChange(
                                     absoluteIndex,
                                     "startDate",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -1756,7 +1756,7 @@ const ContractPreview: React.FC = () => {
                                   handleInputChange(
                                     absoluteIndex,
                                     "endDate",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -1778,7 +1778,7 @@ const ContractPreview: React.FC = () => {
                                   handleInputChange(
                                     absoluteIndex,
                                     "finalPaymentDate",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -1804,7 +1804,7 @@ const ContractPreview: React.FC = () => {
                                     handleAmountChange(
                                       absoluteIndex,
                                       "finalPaymentAmount",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   placeholder="0.00"
@@ -1822,7 +1822,7 @@ const ContractPreview: React.FC = () => {
                                       "number"
                                         ? contract.finalPaymentAmount.toLocaleString()
                                         : parseFloat(
-                                            contract.finalPaymentAmount || "0"
+                                            contract.finalPaymentAmount || "0",
                                           ).toLocaleString()
                                     }`
                                   : "-"}
@@ -1994,7 +1994,7 @@ const ContractPreview: React.FC = () => {
                       到{" "}
                       {Math.min(
                         pagination.currentPage * pagination.pageSize,
-                        pagination.totalItems
+                        pagination.totalItems,
                       )}{" "}
                       条， 共 {pagination.totalItems} 条
                     </div>

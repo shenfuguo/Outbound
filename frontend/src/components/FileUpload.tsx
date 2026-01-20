@@ -17,10 +17,10 @@ interface FileUploadProps {
 
 interface Company {
   id: string;
-  companyName: string;
-  address?: string;
-  contact1?: string;
-  phone1?: string;
+  company_name: string;
+  company_address?: string;
+  contact_person?: string;
+  phone?: string;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -39,7 +39,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const [error, setError] = useState<string>("");
   const [hasError, setHasError] = useState<boolean>(false);
   const [errorType, setErrorType] = useState<"error" | "warning" | "success">(
-    "success"
+    "success",
   );
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [loadingCompanies, setLoadingCompanies] = useState<boolean>(false);
@@ -166,7 +166,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       const isDuplicate = selectedFiles.some(
         (existingFile) =>
           existingFile.name.trim().toLowerCase() ===
-            file.name.trim().toLowerCase() && existingFile.size === file.size
+            file.name.trim().toLowerCase() && existingFile.size === file.size,
       );
 
       if (isDuplicate) {
@@ -334,7 +334,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
                 ...prev,
                 [file.name]: progress,
               }));
-            }
+            },
           );
 
           results.push({ file, result });
@@ -428,7 +428,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
             ...prev,
             [fileName]: progress,
           }));
-        }
+        },
       );
 
       // 上传成功
@@ -481,7 +481,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   // 检查是否有文件正在上传
   const isUploadInProgress = Object.values(uploadProgress).some(
-    (progress) => progress > 0 && progress < 100
+    (progress) => progress > 0 && progress < 100,
   );
 
   // 上传按钮的禁用条件
@@ -526,8 +526,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
                   <option value="">请选择公司</option>
                   {companies.map((company) => (
                     <option key={company.id} value={company.id}>
-                      {company.companyName}
-                      {company.contact1 && ` - ${company.contact1}`}
+                      {company.company_name}
+                      {company.contact_person && ` - ${company.contact_person}`}
                     </option>
                   ))}
                 </select>
@@ -562,8 +562,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
                 errorType === "error"
                   ? "bg-red-50 border-red-200 text-red-800"
                   : errorType === "warning"
-                  ? "bg-yellow-50 border-yellow-200 text-yellow-800"
-                  : "bg-green-50 border-green-200 text-green-800"
+                    ? "bg-yellow-50 border-yellow-200 text-yellow-800"
+                    : "bg-green-50 border-green-200 text-green-800"
               }`}
             >
               <div className="flex items-center space-x-2">
@@ -571,8 +571,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
                   {errorType === "error"
                     ? "❌"
                     : errorType === "warning"
-                    ? "⚠️"
-                    : "✅"}
+                      ? "⚠️"
+                      : "✅"}
                 </span>
                 <span className="font-medium whitespace-pre-line">{error}</span>
               </div>
@@ -614,8 +614,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
                 {isUploading
                   ? "文件上传中..."
                   : isDragging
-                  ? "释放文件以上传"
-                  : "点击选择文件或拖拽文件到这里"}
+                    ? "释放文件以上传"
+                    : "点击选择文件或拖拽文件到这里"}
               </div>
               <div className="text-lg text-gray-600 mb-4">
                 支持格式: {currentConfig.accept}
@@ -697,7 +697,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
                     <div className="w-full bg-gray-200 rounded-full h-2 relative">
                       <div
                         className={`h-2 rounded-full transition-all duration-300 ease-out ${getProgressBarColor(
-                          uploadProgress[file.name]
+                          uploadProgress[file.name],
                         )}`}
                         style={{
                           width: `${
@@ -736,7 +736,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
                   上传中... (
                   {
                     Object.values(uploadProgress).filter(
-                      (p) => p > 0 && p < 100
+                      (p) => p > 0 && p < 100,
                     ).length
                   }
                   /{selectedFiles.length})
