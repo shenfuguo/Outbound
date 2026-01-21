@@ -1,11 +1,11 @@
 // src/pages/FileList.tsx
 import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ROUTE_PATHS } from "../router/routes";
-import { api } from "../utils/api";
-import { formatFileSize } from "../utils/fileSizeUtils";
-import { formatDateSmart } from "../utils/dateUtils";
-import type { FileItem } from "../types";
+import { ROUTE_PATHS } from "../../router/routes";
+import { api } from "../../utils/api";
+import { formatFileSize } from "../../utils/fileSizeUtils";
+import { formatDateSmart } from "../../utils/dateUtils";
+import type { FileItem } from "../../types";
 
 // 类型定义
 interface PaginationParams {

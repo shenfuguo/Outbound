@@ -1,8 +1,8 @@
 // src/pages/CompanyLogin.tsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ROUTE_PATHS } from "../router/routes";
-import { api, ApiError } from "../utils/api";
+import { ROUTE_PATHS } from "../../router/routes";
+import { api, ApiError } from "../../utils/api";
 
 // 公司数据接口
 interface CompanyData {

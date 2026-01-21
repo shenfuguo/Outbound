@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ROUTE_PATHS } from "./../router/routes";
+import { ROUTE_PATHS } from "../../router/routes";
 
 const Home: React.FC = () => {
   const features = [

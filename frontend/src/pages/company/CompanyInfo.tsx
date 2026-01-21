@@ -1,8 +1,8 @@
 // src/pages/CompanyInfo.tsx
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ROUTE_PATHS } from "../router/routes";
-import { api, ApiError } from "../utils/api";
+import { ROUTE_PATHS } from "../../router/routes";
+import { api, ApiError } from "../../utils/api";
 
 // 公司数据类型定义
 interface Company {

@@ -1,20 +1,14 @@
+// src/App.tsx
 import React from "react";
-import { BrowserRouter as Router } from "react-router-dom";
-import Layout from "./components/Layout";
-import AppRouter from "./router/AppRouter";
-import "./App.css"; // 添加全局样式
+import { useRoutes } from "react-router-dom";
+import { ConfigProvider } from "antd";
+import { routes } from "./router/routes";
+import "./App.css";
 
 const App: React.FC = () => {
-  return (
-    // <div className="app-container">
-    // {/* 添加外层容器 */}
-    <Router>
-      <Layout>
-        <AppRouter />
-      </Layout>
-    </Router>
-    // </div>
-  );
+  const element = useRoutes(routes);
+
+  return <ConfigProvider>{element}</ConfigProvider>;
 };
 
 export default App;
