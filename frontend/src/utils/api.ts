@@ -13,7 +13,11 @@ interface RequestConfig extends RequestInit {
 
 // API 错误类
 export class ApiError extends Error {
-  constructor(message: string, public status?: number, public data?: any) {
+  constructor(
+    message: string,
+    public status?: number,
+    public data?: any,
+  ) {
     super(message);
     this.name = "ApiError";
   }
@@ -68,7 +72,7 @@ export class ApiClient {
   // 核心请求方法
   private async request<T>(
     endpoint: string,
-    config: RequestConfig
+    config: RequestConfig,
   ): Promise<ApiResponse<T>> {
     const {
       method = "GET",
@@ -120,7 +124,7 @@ export class ApiClient {
         throw new ApiError(
           data?.message || `请求失败: ${response.statusText}`,
           response.status,
-          data
+          data,
         );
       }
 
@@ -146,7 +150,7 @@ export class ApiClient {
   async get<T>(
     endpoint: string,
     params?: Record<string, any>,
-    config?: Omit<RequestConfig, "method" | "params">
+    config?: Omit<RequestConfig, "method" | "params">,
   ): Promise<T> {
     const response = await this.request<T>(endpoint, {
       method: "GET",
@@ -160,7 +164,7 @@ export class ApiClient {
   async post<T>(
     endpoint: string,
     data?: any,
-    config?: Omit<RequestConfig, "method" | "body">
+    config?: Omit<RequestConfig, "method" | "body">,
   ): Promise<T> {
     const response = await this.request<T>(endpoint, {
       method: "POST",
@@ -174,7 +178,7 @@ export class ApiClient {
   async put<T>(
     endpoint: string,
     data?: any,
-    config?: Omit<RequestConfig, "method" | "body">
+    config?: Omit<RequestConfig, "method" | "body">,
   ): Promise<T> {
     const response = await this.request<T>(endpoint, {
       method: "PUT",
@@ -188,7 +192,7 @@ export class ApiClient {
   async delete<T>(
     endpoint: string,
     params?: Record<string, any>,
-    config?: Omit<RequestConfig, "method" | "params">
+    config?: Omit<RequestConfig, "method" | "params">,
   ): Promise<T> {
     const response = await this.request<T>(endpoint, {
       method: "DELETE",
@@ -202,7 +206,7 @@ export class ApiClient {
   async patch<T>(
     endpoint: string,
     data?: any,
-    config?: Omit<RequestConfig, "method" | "body">
+    config?: Omit<RequestConfig, "method" | "body">,
   ): Promise<T> {
     const response = await this.request<T>(endpoint, {
       method: "PATCH",
@@ -217,7 +221,7 @@ export class ApiClient {
 // 简单的配置方式
 const getApiBaseUrl = () => {
   // 可以根据需要修改这里
-  return "http://localhost:5173/api";
+  return "http://192.168.1.217:5173/api";
 };
 
 export const api = new ApiClient(getApiBaseUrl());

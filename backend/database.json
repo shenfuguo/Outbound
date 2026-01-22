@@ -1,7 +1,7 @@
 {
   "development": {
     "dialect": "postgresql",
-    "host": "localhost",
+    "host": "192.168.1.217",
     "port": 5432,
     "database": "out-bound",
     "username": "postgres",
@@ -15,11 +15,11 @@
   },
   "production": {
     "dialect": "postgresql",
-    "host": "prod-db.example.com",
+    "host": "192.168.1.217",
     "port": 5432,
-    "database": "myapp_prod",
-    "username": "myapp_user",
-    "password": "prod_password",
+    "database": "out-bound",
+    "username": "postgres",
+    "password": "postgres",
     "pool": {
       "max": 20,
       "min": 5,
@@ -29,7 +29,7 @@
   },
   "testing": {
     "dialect": "postgresql",
-    "host": "localhost",
+    "host": "192.168.1.217",
     "port": 5432,
     "database": "myapp_test",
     "username": "postgres",

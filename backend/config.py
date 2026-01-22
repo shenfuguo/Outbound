@@ -65,7 +65,7 @@ class DevelopmentConfig(Config):
             # 回退到环境变量或默认值
             self.SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
                 os.environ.get('DATABASE_URL') or \
-                'postgresql://postgres:postgres@localhost:5432/out-bound'
+                'postgresql://postgres:postgres@192.168.1.217:5432/out-bound'
         
         # 确保数据库URI不为空
         if not self.SQLALCHEMY_DATABASE_URI:
@@ -110,7 +110,7 @@ class TestingConfig(Config):
             )
         else:
             self.SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
-                'postgresql://postgres:password@localhost:5432/myapp_test'
+                'postgresql://postgres:password@192.168.1.217:5432/myapp_test'
         
         self.SQLALCHEMY_TRACK_MODIFICATIONS = False
 
